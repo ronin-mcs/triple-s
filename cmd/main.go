@@ -10,17 +10,17 @@ import (
 
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
-func makeHandler(w http.ResponseWriter, r *http.Request) http.HandlerFunc {
+func makeHandler(w http.ResponseWriter, r *http.Request, dir string) http.HandlerFunc {
 
 	path := strings.Trim(r.URL.Path, "/")
 	parts := strings.Split(path, "/")
 
 	switch {
 	case len(parts) == 0 && r.Method == http.MethodGet:
+		handlers.GetAllBuckets(w, r, dir)
+	case len(parts) == 1 && r.Method == http.MethodPut:
 		bucket_name := parts[0]
-		storage.XMLallBuckets()
-	case 1:
-
+		handlers.PutBucket(w, r, dir, bucket_name)
 	case 2:
 
 	default:
@@ -42,9 +42,9 @@ func main() {
 	port := flag.String("port", "8080", "Port number")
 	dir := flag.String("dir", "./data", "Path to directory")
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		handler(w, r, *dataDir)
-	})
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	handler(w, r, *dataDir)
+	// })
 
 	http.HandleFunc("/", makeHandler())
 

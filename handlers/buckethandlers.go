@@ -1,6 +1,10 @@
 package handlers
 
-import "time"
+import (
+	"fmt"
+	"net/http"
+	"time"
+)
 
 type Bucket struct {
 	Name             string
@@ -15,4 +19,15 @@ func (b *Bucket) save() error {
 
 }
 
-func 
+func GetAllBuckets(w http.ResponseWriter, r *http.Request, dir string) {
+	all_buckets_xml, err := storage.XMLallBuckets(dir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNoContent)
+		return
+	}
+	fmt.Fprint(w, string(all_buckets_xml))
+}
+
+func PutBucket(w http.ResponseWriter, r *http.Request, dir string, bucket_name string) {
+	
+}
