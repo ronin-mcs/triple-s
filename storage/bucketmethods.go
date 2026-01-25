@@ -16,6 +16,20 @@ type Bucket struct {
 	Status           string `xml:"Status"`
 }
 
+type Buckets struct {
+	Bucket []Bucket `xml:"Bucket"`
+}
+
+type ListAllMyBucketsResult struct {
+	XMLName xml.Name `xml:"ListAllMyBucketsResult"`
+	Buckets Buckets  `xml:"Buckets"`
+}
+
+var BucketMap map[string]Bucket
+
+// function to extract file with metadata and error
+// function to extract
+
 func XMLallBuckets(dir string) ([]byte, error) {
 	f, err := os.OpenFile(dir+"/buckets.csv", os.O_CREATE|os.O_RDONLY, 0644)
 	if err != nil {
@@ -28,15 +42,6 @@ func XMLallBuckets(dir string) ([]byte, error) {
 	records, err := r.ReadAll()
 	if err != nil {
 		return nil, errors.New("There's no buckets in the storage")
-	}
-
-	type Buckets struct {
-		Bucket []Bucket `xml:"Bucket"`
-	}
-
-	type ListAllMyBucketsResult struct {
-		XMLName xml.Name `xml:"ListAllMyBucketsResult"`
-		Buckets Buckets  `xml:"Buckets"`
 	}
 
 	buckets := []Bucket{}

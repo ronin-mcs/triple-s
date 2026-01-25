@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
-	"triple-s/structs"
 )
 
 func UploadObject(object structs.ObjectMetadata, content io.Reader, bucket_dir string) error {
@@ -35,7 +35,17 @@ func UploadObject(object structs.ObjectMetadata, content io.Reader, bucket_dir s
 	}
 }
 
-func GetObjectContent
+func GetObjectContent(object structs.ObjectMetadata, bucket_name, bucket_dir string) (structs.ObjectMetadata, f, error) {
+	object_path := filepath.Join(bucket_dir, object.ObjectKey)
+	f, err := os.Open(object_path)
+	defer f.Close()
+
+	object, err = GetObjectMetadata(object, bucket_dir)
+	if err != nil {
+		return nil, nil, err
+	}
+	return object, f, nil
+}
 
 func putObjectMetadata(object structs.ObjectMetadata, bucket_dir string) error {
 	csv_dir := filepath.Join(bucket_dir, "objects.csv")
@@ -84,7 +94,7 @@ func IsObjectExist(object structs.ObjectMetadata, bucket_dir string) (bool, erro
 
 func EditObjectMetadataTo(object_NewMetadata structs.ObjectMetadata, bucket_dir string) error {
 	csv_objects := filepath.Join(bucket_dir, "objects.csv")
-	f, err := os.OpenFile(bucket_dir, os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -112,4 +122,38 @@ func EditObjectMetadataTo(object_NewMetadata structs.ObjectMetadata, bucket_dir 
 		}
 	}
 	return errors.New("The object's metadata cannot be edit since there's no such")
+}
+
+func GetObjectMetadata(object structs.ObjectMetadata, bucket_dir string) (structs.ObjectMetadata, error) {
+	csv_objects := filepath.Join(bucket_dir, "objects.csv")
+	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	r := csv.NewReader(f)
+
+	records, err := r.ReadAll() // return err if no records
+	if err != nil {
+		return nil, errors.New("There's no buckets in the storage")
+	}
+
+	for _, row := range records {
+		// if i == 0 {
+		// 	continue
+		// }
+		if row[0] == object.ObjectKey {
+			ContentLength, err := strconv.Atoi(row[1])
+			if err != nil {
+				return nil, err
+			}
+			LastModified, err := time.Parse(time.RFC3339, row[3])
+			if err != nil {
+				return nil, err
+			}
+
+			return structs.NewObjectMetadata(row[0], ContentLength, row[2], LastModified), nil
+		}
+	}
+	return nil, errors.New("The object's metadata cannot be edit since there's no such")
 }

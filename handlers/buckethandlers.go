@@ -14,12 +14,12 @@ func BucketHandler(w http.ResponseWriter, r *http.Request, dir, bucket_name stri
 	switch r.Method {
 	case http.MethodGet:
 		GetAllBuckets(w, r, dir)
-	case http.MethodPut(w, r, dir):
+	case http.MethodPut:
 		PutBucket(w, r, dir, bucket_name)
 	case http.MethodDelete:
 		DeleteBucket(w, r, dir, bucket_name)
 	default:
-		panic()
+		panic(1)
 	}
 }
 
