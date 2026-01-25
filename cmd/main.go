@@ -11,18 +11,19 @@ import (
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
 func makeHandler(w http.ResponseWriter, r *http.Request, dir string) http.HandlerFunc {
-
 	path := strings.Trim(r.URL.Path, "/")
 	parts := strings.Split(path, "/")
 
 	switch {
 	case len(parts) == 0 && r.Method == http.MethodGet:
-		handlers.GetAllBuckets(w, r, dir)
-	case len(parts) == 1 && r.Method == http.MethodPut:
+		handlers.BucketHandler(w, r, dir, "")
+	case len(parts) == 1 && r.Method != http.MethodGet:
 		bucket_name := parts[0]
-		handlers.PutBucket(w, r, dir, bucket_name)
-	case 2:
-
+		handlers.BucketHandler(w, r, dir, bucket_name)
+	case len(parts) == 2:
+		bucket_name := parts[0]
+		object_key := parts[1]
+		handlers.ObjectHandler(w, r, dir, bucket_name, object_key)
 	default:
 		// какая-то ошибка, хз пока какая
 
