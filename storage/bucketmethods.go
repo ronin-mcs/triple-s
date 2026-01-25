@@ -27,8 +27,7 @@ type ListAllMyBucketsResult struct {
 
 var BucketMap map[string]Bucket
 
-// function to extract file with metadata and error
-// function to extract
+// function to construct map
 
 func XMLallBuckets(dir string) ([]byte, error) {
 	f, err := os.OpenFile(dir+"/buckets.csv", os.O_CREATE|os.O_RDONLY, 0644)

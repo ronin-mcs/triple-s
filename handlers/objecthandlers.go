@@ -17,6 +17,8 @@ func ObjectHandler(w http.ResponseWriter, r *http.Request, dir, bucket_name, obj
 		PutObject(w, r, dir, bucket_name, object)
 	case http.MethodGet:
 		GetObject(w, r, dir, bucket_name, object)
+	case http.MethodDelete:
+		DeleteObject(w, r, dir, bucket_name, object)
 	}
 }
 
@@ -48,7 +50,7 @@ func PutObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, 
 	w.WriteHeader(http.StatusOK)
 }
 
-func GetObject(w http.ResponseWriter, r *http.Request, dir, bucket_name, object stringstructs.ObjectMetadata) {
+func GetObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, object stringstructs.ObjectMetadata) {
 	ok, err := !storage.IsBucketExists(bucket_name, dir)
 	if !ok {
 		http.Error(w, "The requested bucket name is not available."+
@@ -77,9 +79,43 @@ func GetObject(w http.ResponseWriter, r *http.Request, dir, bucket_name, object 
 	}
 
 	w.Header().Set("Content-Type", meta.ContentType)
-	w.Header().Set("Content-Length", strconv.FormatInt(meta.Size, 10))
+	w.Header().Set("Content-Length", strconv.FormatInt(meta.ContentLength, 10))
+	w.Header().Set("LastModified", meta.LastModified.Format(time.RFC3339))
 	w.WriteHeader(http.StatusOK)
 	io.Copy(w, file)
+}
+
+func DeleteObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, object stringstructs.ObjectMetadata) {
+	ok, err := !storage.IsBucketExists(bucket_name, dir)
+	if !ok {
+		http.Error(w, "The requested bucket name is not available."+
+			"The bucket namespace is shared by all users of the system. Select a different name and try again.", http.StatusConflict)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	bucket_dir := filepath.Join(dir, bucket_name)
+	ok, err = storage.IsObjectExist(object, bucket_dir)
+	if !ok {
+		http.Error(w, "The requested object does not exist", http.StatusConflict)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err := DeleteObjectContent(object, bucket_name, bucket_dir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	// w.Header().Set("Content-Type", "None")
+	w.Header().Set("Content-Length", "0")
+	w.Header().Set("LastModified", time.Now().Format(time.RFC3339))
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func extractObjectHeader(r *http.Request) string { // i dont receive Content-Length as int

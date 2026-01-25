@@ -47,6 +47,18 @@ func GetObjectContent(object structs.ObjectMetadata, bucket_name, bucket_dir str
 	return object, f, nil
 }
 
+func DeleteObjectContent(object structs.ObjectMetadata, bucket_name, bucket_dir string) error {
+	objectPath := filepath.Join(bucket_dir, object.ObjectKey)
+
+	if err := os.Remove(objectPath); err != nil {
+		if os.IsNotExist(err) {
+			return errors.New("No such file to delete")
+		}
+		return err
+	}
+	return DeleteObjectContent(object, bucket_dir)
+}
+
 func putObjectMetadata(object structs.ObjectMetadata, bucket_dir string) error {
 	csv_dir := filepath.Join(bucket_dir, "objects.csv")
 	f, err := os.OpenFile(csv_dir, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -156,4 +168,32 @@ func GetObjectMetadata(object structs.ObjectMetadata, bucket_dir string) (struct
 		}
 	}
 	return nil, errors.New("The object's metadata cannot be edit since there's no such")
+}
+
+func DeleteObjectMetadata(object_NewMetadata structs.ObjectMetadata, bucket_dir string) error {
+	csv_objects := filepath.Join(bucket_dir, "objects.csv")
+	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	r := csv.NewReader(f)
+
+	records, err := r.ReadAll() // return err if no records
+	if err != nil {
+		return errors.New("There's no buckets in the storage")
+	}
+	buf := [][]string{}
+	for _, row := range records {
+		// if i == 0 {
+		// 	continue
+		// }
+		if row[0] != object_NewMetadata.ObjectKey {
+			buf = append(buf, row)
+		}
+	}
+	if err := rewriteCSV(csv_objects, records); err != nil {
+		return err
+	}
+	return nil
 }
