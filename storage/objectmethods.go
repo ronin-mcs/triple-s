@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+	"triple-s/structs"
 )
 
 func UploadObject(object structs.ObjectMetadata, content io.Reader, bucket_dir string) error {
