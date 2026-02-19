@@ -25,8 +25,7 @@ type ListAllMyBucketsResult struct {
 	Buckets Buckets  `xml:"Buckets"`
 }
 
-var BucketMap map[string]Bucket
-
+// var BucketMap map[string]Bucket
 // function to construct map
 
 func XMLallBuckets(dir string) ([]byte, error) {
@@ -45,10 +44,6 @@ func XMLallBuckets(dir string) ([]byte, error) {
 
 	buckets := []Bucket{}
 	for _, row := range records {
-		// if i == 0 {
-		// 	continue // first row is headers
-		// }
-
 		buckets = append(buckets, Bucket{
 			Name:             row[0],
 			CreationDate:     row[1],
@@ -69,12 +64,12 @@ func XMLallBuckets(dir string) ([]byte, error) {
 }
 
 func CreateBucket(bucket_name, dir string) (error, bool) {
-	ok, err := IsBucketExists(bucket_name, dir)
+	bucket_dir := filepath.Join(dir, bucket_name)
+	ok, err := IsBucketExists(bucket_name, bucket_dir)
 	if err != nil {
 		return err, false
 	}
 
-	bucket_dir := filepath.Join(dir, bucket_name)
 	if _, err := os.Stat(bucket_dir); err == nil || !ok {
 		return nil, true
 	}
@@ -83,11 +78,12 @@ func CreateBucket(bucket_name, dir string) (error, bool) {
 		return err, false
 	}
 
-	return PutBucketMetadata(bucket_name, time.Now(), time.Now(), "active", dir), false
+	return PutBucketMetadata(bucket_dir, bucket_name, time.Now(), time.Now(), "active"), false
 }
 
 func DeleteBucketStorage(bucket_name, dir string) error {
-	ok, err := IsBucketExists(bucket_name, dir)
+	bucket_dir := filepath.Join(dir, bucket_name)
+	ok, err := IsBucketExists(bucket_name, bucket_dir)
 	if err != nil {
 		return err
 	}
@@ -95,7 +91,6 @@ func DeleteBucketStorage(bucket_name, dir string) error {
 		return errors.New("Bucket does not exist")
 	}
 
-	bucket_dir := filepath.Join(dir, bucket_name)
 	err = os.Remove(bucket_dir)
 	if err != nil {
 		return errors.New("Non-empty Bucket")
@@ -119,9 +114,6 @@ func EditBucketMetadataTo(bucket_name string, Status, dir string) error {
 	}
 
 	for _, row := range records {
-		// if i == 0 {
-		// 	continue
-		// }
 		if row[0] == bucket_name {
 			row[0] = bucket_name // optional btw
 			row[2] = time.Now().Format(time.RFC3339)
@@ -135,8 +127,9 @@ func EditBucketMetadataTo(bucket_name string, Status, dir string) error {
 	return errors.New("The bucket's metadata cannot be edit since there's no such")
 }
 
-func PutBucketMetadata(bucket_name string, CreationTime, LastModifiedTime time.Time, Status, dir string) error {
-	bucket_dir := filepath.Join(dir, "buckets.csv")
+func PutBucketMetadata(bucket_dir string,
+	bucket_name string, CreationTime, LastModifiedTime time.Time, Status string) error {
+
 	f, err := os.OpenFile(bucket_dir,
 		os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err == nil {
@@ -158,9 +151,8 @@ func PutBucketMetadata(bucket_name string, CreationTime, LastModifiedTime time.T
 	return w.Error()
 }
 
-func IsBucketExists(bucket_name, dir string) (bool, error) {
+func IsBucketExists(bucket_name, bucket_dir string) (bool, error) {
 	// creating a map and checking by it would be more efficient though
-	bucket_dir := filepath.Join(dir, "buckets.csv")
 	f, err := os.OpenFile(bucket_dir, os.O_CREATE|os.O_RDONLY, 0644)
 	if err != nil {
 		return false, err
@@ -175,9 +167,6 @@ func IsBucketExists(bucket_name, dir string) (bool, error) {
 	}
 
 	for _, row := range records {
-		// if i == 0 {
-		// 	continue
-		// }
 		if row[0] == bucket_name {
 			return true, nil
 		}

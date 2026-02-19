@@ -2,15 +2,25 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"triple-s/handlers"
 )
 
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
-func makeHandler(w http.ResponseWriter, r *http.Request, dir string) http.HandlerFunc {
+func Handler(w http.ResponseWriter, r *http.Request, dir string) {
+	m := validPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+		return
+	}
+
 	path := strings.Trim(r.URL.Path, "/")
 	parts := strings.Split(path, "/")
 
@@ -25,29 +35,50 @@ func makeHandler(w http.ResponseWriter, r *http.Request, dir string) http.Handle
 		object_key := parts[1]
 		handlers.ObjectHandler(w, r, dir, bucket_name, object_key)
 	default:
-		// какая-то ошибка, хз пока какая
-
-	}
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := validPath.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
-		}
-		fn(w, r, m[2])
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 	}
 }
 
 func main() {
-	port := flag.String("port", "8080", "Port number")
+	flag.Usage = func() {
+		fmt.Println("Simple Storage Service.")
+		fmt.Println()
+		fmt.Println("Usage:")
+		fmt.Println("  triple-s [-port N] [-dir S]")
+		fmt.Println("  triple-s --help")
+		fmt.Println()
+		fmt.Println("Options:")
+		flag.PrintDefaults()
+	}
+
+	// ===================================================================
+	port := flag.Int("port", 8080, "Port number")
 	dir := flag.String("dir", "./data", "Path to directory")
 
-	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	handler(w, r, *dataDir)
-	// })
+	if *port <= 0 || *port > 65535 {
+		log.Fatalf("invalid port: %d", *port)
+	}
 
-	http.HandleFunc("/", makeHandler())
+	if *dir == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
 
-	log.Fatal(http.ListenAndServe(":"+*port, nil))
+	info, err := os.Stat(*dir)
+	if os.IsNotExist(err) {
+		log.Fatalf("directory does not exist: %s", *dir)
+	}
+	if err == nil && !info.IsDir() {
+		log.Fatalf("path is not a directory: %s", *dir)
+	}
+
+	// ===================================================================
+
+	flag.Parse()
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		Handler(w, r, *dir)
+	})
+
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
 }

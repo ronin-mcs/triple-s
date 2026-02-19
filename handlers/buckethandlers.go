@@ -3,7 +3,10 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"triple-s/storage"
+	"path/filepath"
+	"time"
+	storage "triple-s/storage"
+	validate "triple-s/validation"
 )
 
 // func (b *Bucket) save() error {
@@ -19,7 +22,7 @@ func BucketHandler(w http.ResponseWriter, r *http.Request, dir, bucket_name stri
 	case http.MethodDelete:
 		DeleteBucket(w, r, dir, bucket_name)
 	default:
-		panic(1)
+		http.Error(w, "Invalid request(buckets)", http.StatusBadRequest)
 	}
 }
 
@@ -33,7 +36,7 @@ func GetAllBuckets(w http.ResponseWriter, r *http.Request, dir string) {
 }
 
 func PutBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name string) {
-	if !valdiate.BucketnameValidation(bucket_name) {
+	if !validate.BucketnameValidation(bucket_name) {
 		http.Error(w, "Invalid bucket name", http.StatusBadRequest)
 	}
 
@@ -47,6 +50,10 @@ func PutBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name string) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Date", time.Now().UTC().Format(time.RFC3339))
+	w.Header().Set("Location", filepath.Join(dir, bucket_name))
+	w.Header().Set("Content-Length", "0")
+	// dunno what to add
 }
 
 func DeleteBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name string) {
@@ -65,4 +72,5 @@ func DeleteBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name strin
 	}
 	// w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(http.StatusNoContent)
+	w.Header().Set("Date", time.Now().UTC().Format(time.RFC3339))
 }
