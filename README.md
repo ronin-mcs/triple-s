@@ -280,7 +280,7 @@ Date: Fri, 20 Feb 2026 09:15:48 GMT
 ### Delete object
 
 ```sh
-curl -i -X DELETE http://localhost:8080/my-bucket/test.txt
+curl -i -X DELETE http://localhost:8080/my-cucket/test.jpg
 ```
 
 #### Output

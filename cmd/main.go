@@ -7,16 +7,16 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
 	"triple-s/handlers"
 )
 
 var validPath = regexp.MustCompile(`^/([a-zA-Z0-9]+)(/[a-zA-Z0-9]+)*$`)
-func Handler(w http.ResponseWriter, r *http.Request, dir string) {
 
+func Handler(w http.ResponseWriter, r *http.Request, dir string) {
 	if _, err := url.Parse(r.URL.Path); err != nil {
 		http.Error(w, "Invalid URL path", http.StatusBadRequest)
 		return
@@ -40,22 +40,6 @@ func Handler(w http.ResponseWriter, r *http.Request, dir string) {
 	}
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("1. Handler started: %s", r.URL.Path)
-
-	bucket_name := strings.TrimPrefix(r.URL.Path, "/buckets/")
-	log.Printf("2. Bucket name: %q", bucket_name)
-
-	bucket_dir := filepath.Join("./data", bucket_name)
-	log.Printf("3. Bucket dir: %q", bucket_dir)
-
-	err := os.MkdirAll(bucket_dir, 0755)
-	log.Printf("4. MkdirAll err: %v", err)
-
-	w.WriteHeader(201) // Должно дойти сюда
-	log.Println("5. Response sent")
-}
-
 func main() {
 	flag.Usage = func() {
 		fmt.Println("Simple Storage Service.")
@@ -71,6 +55,8 @@ func main() {
 	// ===================================================================
 	port := flag.Int("port", 8080, "Port number")
 	dir := flag.String("dir", "./data", "Path to directory")
+
+	flag.Parse()
 
 	if *port <= 0 || *port > 65535 {
 		log.Fatalf("invalid port: %d", *port)
@@ -90,8 +76,6 @@ func main() {
 	}
 
 	// ===================================================================
-
-	flag.Parse()
 
 	// http.HandleFunc("/", handler)
 

@@ -29,7 +29,7 @@ type ListAllMyBucketsResult struct {
 // function to construct map
 
 func XMLallBuckets(dir string) ([]byte, error) {
-	f, err := os.OpenFile(dir+"/buckets.csv", os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := os.OpenFile(dir+"/buckets.csv", os.O_CREATE|os.O_RDONLY, 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func CreateBucket(bucket_name, dir string) (error, bool) {
 		return nil, true
 	}
 
-	err = os.MkdirAll(bucket_dir, 0755)
+	err = os.MkdirAll(bucket_dir, 0o755)
 	if err != nil {
 		return err, false
 	}
@@ -107,7 +107,7 @@ func DeleteBucketStorage(bucket_name, dir string) error {
 
 func EditBucketMetadataTo(bucket_name string, Status, dir string) error {
 	csv_dir := filepath.Join(dir, "buckets.csv")
-	f, err := os.OpenFile(csv_dir, os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := os.OpenFile(csv_dir, os.O_CREATE|os.O_RDONLY, 0o644)
 	if err != nil {
 		return err
 	}
@@ -134,10 +134,11 @@ func EditBucketMetadataTo(bucket_name string, Status, dir string) error {
 }
 
 func PutBucketMetadata(dir string,
-	bucket_name string, CreationTime, LastModifiedTime time.Time, Status string) error {
+	bucket_name string, CreationTime, LastModifiedTime time.Time, Status string,
+) error {
 	csv_dir := filepath.Join(dir, "buckets.csv")
 	f, err := os.OpenFile(csv_dir,
-		os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}
@@ -160,7 +161,7 @@ func PutBucketMetadata(dir string,
 func IsBucketExists(bucket_name, dir string) (bool, error) {
 	// creating a map and checking by it would be more efficient though
 	cvs_dir := filepath.Join(dir, "buckets.csv")
-	f, err := os.OpenFile(cvs_dir, os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := os.OpenFile(cvs_dir, os.O_CREATE|os.O_RDONLY, 0o644)
 	if err != nil {
 		return false, err
 	}
@@ -185,7 +186,7 @@ func IsBucketExists(bucket_name, dir string) (bool, error) {
 }
 
 func rewriteCSV(dir string, records [][]string) error {
-	f, err := os.OpenFile(dir, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(dir, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 	if err != nil {
 		return err
 	}

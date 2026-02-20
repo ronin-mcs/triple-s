@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
 	storage "triple-s/storage"
 	s "triple-s/structs"
 	validate "triple-s/validation"
@@ -35,6 +36,7 @@ func PutObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, 
 
 	if !validate.ObejectkeyValidation(object.ObjectKey) {
 		http.Error(w, "Invalid object key", http.StatusBadRequest)
+		return
 	}
 
 	var content io.Reader
@@ -98,6 +100,7 @@ func DeleteObject(w http.ResponseWriter, r *http.Request, dir, bucket_name strin
 	err := storage.DeleteObjectContent(object, bucket_dir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "None")
 	w.Header().Set("Content-Length", "0")
@@ -118,6 +121,7 @@ func bucketExistence(w http.ResponseWriter, bucket_name, dir string) (bool, erro
 	}
 	return true, nil
 }
+
 func objectExistence(w http.ResponseWriter, bucket_dir string, object *s.ObjectMetadata) (bool, error) {
 	ok, err := storage.IsObjectExist(object, bucket_dir)
 	if !ok {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"time"
+
 	storage "triple-s/storage"
 	validate "triple-s/validation"
 )
@@ -39,6 +40,7 @@ func GetAllBuckets(w http.ResponseWriter, r *http.Request, dir string) {
 func PutBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name string) {
 	if !validate.BucketnameValidation(bucket_name) {
 		http.Error(w, "Invalid bucket name", http.StatusBadRequest)
+		return
 	}
 
 	err, IsExists := storage.CreateBucket(bucket_name, dir)

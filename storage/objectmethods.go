@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
 	"triple-s/structs"
 	s "triple-s/structs"
 )
 
 func UploadObject(object *s.ObjectMetadata, content io.Reader, bucket_dir string) error {
-
 	object_path := filepath.Join(bucket_dir, object.ObjectKey)
 	file, err := os.Create(object_path)
 	if err != nil {
@@ -66,7 +66,7 @@ func DeleteObjectContent(object *s.ObjectMetadata, bucket_dir string) error {
 
 func putObjectMetadata(object *structs.ObjectMetadata, bucket_dir string) error {
 	csv_dir := filepath.Join(bucket_dir, "objects.csv")
-	f, err := os.OpenFile(csv_dir, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile(csv_dir, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func putObjectMetadata(object *structs.ObjectMetadata, bucket_dir string) error 
 
 func IsObjectExist(object *structs.ObjectMetadata, bucket_dir string) (bool, error) {
 	metadata := filepath.Join(bucket_dir, "objects.csv")
-	f, err := os.OpenFile(metadata, os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := os.OpenFile(metadata, os.O_CREATE|os.O_RDONLY, 0o644)
 	if err != nil {
 		return false, err
 	}
@@ -111,7 +111,7 @@ func IsObjectExist(object *structs.ObjectMetadata, bucket_dir string) (bool, err
 
 func EditObjectMetadataTo(object_NewMetadata *structs.ObjectMetadata, bucket_dir string) error {
 	csv_objects := filepath.Join(bucket_dir, "objects.csv")
-	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0o644)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func EditObjectMetadataTo(object_NewMetadata *structs.ObjectMetadata, bucket_dir
 
 func GetObjectMetadata(object_key string, bucket_dir string) (*s.ObjectMetadata, error) {
 	csv_objects := filepath.Join(bucket_dir, "objects.csv")
-	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func GetObjectMetadata(object_key string, bucket_dir string) (*s.ObjectMetadata,
 
 func deleteObjectMetadata(object_NewMetadata *s.ObjectMetadata, bucket_dir string) error {
 	csv_objects := filepath.Join(bucket_dir, "objects.csv")
-	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := os.OpenFile(csv_objects, os.O_CREATE|os.O_RDONLY, 0o644)
 	if err != nil {
 		return err
 	}
