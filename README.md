@@ -80,49 +80,7 @@ Don't forget to process the data and save the corresponding metadata in your CSV
 - Check the uniqueness of a bucket name by reading the existing entries from the CSV metadata file.
 - If the bucket name does not meet the rules, return a `400 Bad Request` response with a relevant error message.
 
-#### 1. Create a Bucket:
-- **HTTP Method:** `PUT`
-- **Endpoint:** `/{BucketName}`
-- **Request Body:** Empty. Additional parameters can be passed in the request headers.
-- **Behavior:**
-  - Validate the bucket name to ensure it meets Amazon S3 naming requirements (3-63 characters, only lowercase letters, numbers, hyphens, and periods).
-  - Ensure the bucket name is unique across the entire storage system.
-  - If the bucket name is valid and unique, create a new entry in the bucket metadata storage.
-  - Return a `200 OK` status code and details of the created bucket, or an appropriate error message if the creation fails (e.g., `400 Bad Request` for invalid names, `409 Conflict` for duplicate names).
 
-
-#### 2. List All Buckets:
-- **HTTP Method:** `GET`
-- **Endpoint:** `/`
-- **Behavior:**
-  - Read the bucket metadata from the storage (e.g., a CSV file).
-  - Return an XML response containing a list of all matching buckets, including metadata like creation time, last modified time, etc.
-  - Respond with a `200 OK` status code and the [XML list of buckets].
-
-#### 3. Delete a Bucket:
-- **HTTP Method:** `DELETE`
-- **Endpoint:** `/{BucketName}`
-- **Behavior:**
-  - Check if the specified bucket exists by looking it up in the bucket metadata storage.
-  - Ensure the bucket is empty (no objects are stored in it) before deletion.
-  - If the bucket exists and is empty, remove it from the metadata storage.
-  - Return a `204 No Content` status code if the deletion is successful, or an error message in XML format if the bucket does not exist or is not empty (e.g., `404 Not Found` for a non-existent bucket, 409 Conflict for a non-empty bucket).
-
-### Ensuring Unique and Valid Bucket Names:
-
-#### Bucket Naming Conventions:
-
-- Bucket names must be unique across the system.
-- Names should be between 3 and 63 characters long.
-- Only lowercase letters, numbers, hyphens (`-`), and dots (`.`) are allowed.
-- Must not be formatted as an IP address (e.g., 192.168.0.1).
-- Must not begin or end with a hyphen and must not contain two consecutive periods or dashes.
-
-#### Validation Implementation
-
-- Use regular expressions to enforce naming rules.
-- Check the uniqueness of a bucket name by reading the existing entries from the CSV metadata file.
-- If the bucket name does not meet the rules, return a `400 Bad Request` response with a relevant error message.
 
 ### API Endpoints for Object Operations
 
