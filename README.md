@@ -295,5 +295,37 @@ Date: Fri, 20 Feb 2026 09:48:52 GMT
 
 As you check the directory you will see that previously uploaded file is absent now as well as the record of it in object.csv
 
+## Interesting cases
 
+Rerun the server and clean data directories. Before the next tests create "my-bucket".
 
+### Put Object with empty object-key
+
+```sh
+curl -i -X PUT \
+  --data-binary @test.jpg \
+  http://localhost:8080/my-bucket/
+```
+It just tries to create bucket instead of upload the given binary.
+
+### Invalid object-key 
+
+```sh
+curl -i -X PUT \
+  --data-binary @test.jpg \
+  http://localhost:8080/my-bucket/test?.jpg
+```
+
+It normalizes URL and remove everything that follows '?'
+
+```sh
+curl -i -X PUT \
+  --data-binary @test.jpg \
+  http://localhost:8080/my-bucket/../hack.jpg
+```
+
+It implements traversing in file system so API URL become 
+```sh
+/hack.jpg
+```
+which creates buckey 'hack.jpg'
