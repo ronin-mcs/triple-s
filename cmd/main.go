@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"triple-s/handlers"
 )
 
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
-
+var validPath = regexp.MustCompile(`^/([a-zA-Z0-9]+)(/[a-zA-Z0-9]+)*$`)
 func Handler(w http.ResponseWriter, r *http.Request, dir string) {
-	m := validPath.FindStringSubmatch(r.URL.Path)
-	if m == nil {
-		http.NotFound(w, r)
+
+	if _, err := url.Parse(r.URL.Path); err != nil {
+		http.Error(w, "Invalid URL path", http.StatusBadRequest)
 		return
 	}
 
@@ -25,7 +26,7 @@ func Handler(w http.ResponseWriter, r *http.Request, dir string) {
 	parts := strings.Split(path, "/")
 
 	switch {
-	case len(parts) == 0 && r.Method == http.MethodGet:
+	case len(parts) == 1 && parts[0] == "" && r.Method == http.MethodGet:
 		handlers.BucketHandler(w, r, dir, "")
 	case len(parts) == 1 && r.Method != http.MethodGet:
 		bucket_name := parts[0]
@@ -37,6 +38,22 @@ func Handler(w http.ResponseWriter, r *http.Request, dir string) {
 	default:
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 	}
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("1. Handler started: %s", r.URL.Path)
+
+	bucket_name := strings.TrimPrefix(r.URL.Path, "/buckets/")
+	log.Printf("2. Bucket name: %q", bucket_name)
+
+	bucket_dir := filepath.Join("./data", bucket_name)
+	log.Printf("3. Bucket dir: %q", bucket_dir)
+
+	err := os.MkdirAll(bucket_dir, 0755)
+	log.Printf("4. MkdirAll err: %v", err)
+
+	w.WriteHeader(201) // Должно дойти сюда
+	log.Println("5. Response sent")
 }
 
 func main() {
@@ -75,6 +92,8 @@ func main() {
 	// ===================================================================
 
 	flag.Parse()
+
+	// http.HandleFunc("/", handler)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		Handler(w, r, *dir)

@@ -13,6 +13,7 @@ import (
 )
 
 func UploadObject(object *s.ObjectMetadata, content io.Reader, bucket_dir string) error {
+
 	object_path := filepath.Join(bucket_dir, object.ObjectKey)
 	file, err := os.Create(object_path)
 	if err != nil {
@@ -43,7 +44,6 @@ func GetObjectContent(object *s.ObjectMetadata, bucket_dir string) (*s.ObjectMet
 	if err != nil {
 		return nil, nil, err
 	}
-	defer f.Close()
 
 	object, err = GetObjectMetadata(object.ObjectKey, bucket_dir)
 	if err != nil {
@@ -67,7 +67,7 @@ func DeleteObjectContent(object *s.ObjectMetadata, bucket_dir string) error {
 func putObjectMetadata(object *structs.ObjectMetadata, bucket_dir string) error {
 	csv_dir := filepath.Join(bucket_dir, "objects.csv")
 	f, err := os.OpenFile(csv_dir, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	defer f.Close()
@@ -87,7 +87,7 @@ func putObjectMetadata(object *structs.ObjectMetadata, bucket_dir string) error 
 }
 
 func IsObjectExist(object *structs.ObjectMetadata, bucket_dir string) (bool, error) {
-	metadata := filepath.Join("bucket_dir", "objects.csv")
+	metadata := filepath.Join(bucket_dir, "objects.csv")
 	f, err := os.OpenFile(metadata, os.O_CREATE|os.O_RDONLY, 0644)
 	if err != nil {
 		return false, err

@@ -6,10 +6,6 @@ var ipRe = regexp.MustCompile(
 	`^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$`,
 )
 
-var objectkeyRe = regexp.MustCompile(
-	`^[A-Za-z0-9!._*'()-]{1,1024}$`,
-)
-
 func isIPv4(s string) bool {
 	return ipRe.MatchString(s)
 }
@@ -41,6 +37,17 @@ func BucketnameValidation(bucket_name string) bool {
 	return true
 }
 
-func ObejectkeyValidation(object_key string) bool {
-	return objectkeyRe.MatchString(object_key)
+func ObejectkeyValidation(s string) bool {
+	if len(s) < 1 || len(s) > 1024 {
+		return false
+	}
+	for _, r := range s {
+		switch {
+		case 'A' <= r && r <= 'Z', 'a' <= r && r <= 'z', '0' <= r && r <= '9',
+			r == '!', r == '.', r == '_', r == '\'', r == '*', r == '(', r == ')', r == '-':
+		default:
+			return false
+		}
+	}
+	return true
 }

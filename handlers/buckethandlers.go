@@ -33,6 +33,7 @@ func GetAllBuckets(w http.ResponseWriter, r *http.Request, dir string) {
 		return
 	}
 	fmt.Fprint(w, string(all_buckets_xml))
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func PutBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name string) {
@@ -50,14 +51,22 @@ func PutBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name string) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Date", time.Now().UTC().Format(time.RFC3339))
 	w.Header().Set("Location", filepath.Join(dir, bucket_name))
 	w.Header().Set("Content-Length", "0")
+	w.WriteHeader(http.StatusCreated)
 	// dunno what to add
 }
 
 func DeleteBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name string) {
 	err := storage.DeleteBucketStorage(bucket_name, dir)
+	if err == nil {
+		// w.Header().Set("Content-Type", "application/xml")
+		w.Header().Set("Date", time.Now().UTC().Format(time.RFC3339))
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	if err.Error() == "Bucket does not exist" {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -70,7 +79,5 @@ func DeleteBucket(w http.ResponseWriter, r *http.Request, dir, bucket_name strin
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// w.Header().Set("Content-Type", "application/xml")
-	w.WriteHeader(http.StatusNoContent)
-	w.Header().Set("Date", time.Now().UTC().Format(time.RFC3339))
+	http.Error(w, "Unconsidered DeleteBucket() case\n Please report to the devs", http.StatusInternalServerError)
 }

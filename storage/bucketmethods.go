@@ -65,25 +65,31 @@ func XMLallBuckets(dir string) ([]byte, error) {
 
 func CreateBucket(bucket_name, dir string) (error, bool) {
 	bucket_dir := filepath.Join(dir, bucket_name)
-	ok, err := IsBucketExists(bucket_name, bucket_dir)
-	if err != nil {
-		return err, false
+
+	if _, err := os.Stat(bucket_dir); !os.IsNotExist(err) {
+		return nil, true
+	} else if err != nil && !os.IsNotExist(err) {
+		panic(err)
 	}
 
-	if _, err := os.Stat(bucket_dir); err == nil || !ok {
+	ok, err := IsBucketExists(bucket_name, dir)
+	if err != nil {
+		return err, false
+	} else if ok {
 		return nil, true
 	}
-	err = os.MkdirAll("data/my-bucket", 0755)
+
+	err = os.MkdirAll(bucket_dir, 0755)
 	if err != nil {
 		return err, false
 	}
 
-	return PutBucketMetadata(bucket_dir, bucket_name, time.Now(), time.Now(), "active"), false
+	return PutBucketMetadata(dir, bucket_name, time.Now(), time.Now(), "active"), false
 }
 
 func DeleteBucketStorage(bucket_name, dir string) error {
 	bucket_dir := filepath.Join(dir, bucket_name)
-	ok, err := IsBucketExists(bucket_name, bucket_dir)
+	ok, err := IsBucketExists(bucket_name, dir)
 	if err != nil {
 		return err
 	}
@@ -100,8 +106,8 @@ func DeleteBucketStorage(bucket_name, dir string) error {
 }
 
 func EditBucketMetadataTo(bucket_name string, Status, dir string) error {
-	bucket_dir := filepath.Join(dir, "buckets.csv")
-	f, err := os.OpenFile(bucket_dir, os.O_CREATE|os.O_RDONLY, 0644)
+	csv_dir := filepath.Join(dir, "buckets.csv")
+	f, err := os.OpenFile(csv_dir, os.O_CREATE|os.O_RDONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -118,7 +124,7 @@ func EditBucketMetadataTo(bucket_name string, Status, dir string) error {
 			row[0] = bucket_name // optional btw
 			row[2] = time.Now().Format(time.RFC3339)
 			row[3] = Status
-			if err := rewriteCSV(bucket_dir, records); err != nil {
+			if err := rewriteCSV(csv_dir, records); err != nil {
 				return err
 			}
 			return nil
@@ -127,12 +133,12 @@ func EditBucketMetadataTo(bucket_name string, Status, dir string) error {
 	return errors.New("The bucket's metadata cannot be edit since there's no such")
 }
 
-func PutBucketMetadata(bucket_dir string,
+func PutBucketMetadata(dir string,
 	bucket_name string, CreationTime, LastModifiedTime time.Time, Status string) error {
-
-	f, err := os.OpenFile(bucket_dir,
+	csv_dir := filepath.Join(dir, "buckets.csv")
+	f, err := os.OpenFile(csv_dir,
 		os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	defer f.Close()
@@ -151,9 +157,10 @@ func PutBucketMetadata(bucket_dir string,
 	return w.Error()
 }
 
-func IsBucketExists(bucket_name, bucket_dir string) (bool, error) {
+func IsBucketExists(bucket_name, dir string) (bool, error) {
 	// creating a map and checking by it would be more efficient though
-	f, err := os.OpenFile(bucket_dir, os.O_CREATE|os.O_RDONLY, 0644)
+	cvs_dir := filepath.Join(dir, "buckets.csv")
+	f, err := os.OpenFile(cvs_dir, os.O_CREATE|os.O_RDONLY, 0644)
 	if err != nil {
 		return false, err
 	}
@@ -167,7 +174,10 @@ func IsBucketExists(bucket_name, bucket_dir string) (bool, error) {
 	}
 
 	for _, row := range records {
-		if row[0] == bucket_name {
+		if row[0] == bucket_name && row[3] == "deleted" {
+			return false, errors.New("Bucket was previously deleted")
+		}
+		if row[0] == bucket_name && row[3] != "deleted" {
 			return true, nil
 		}
 	}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -28,13 +29,31 @@ func ObjectHandler(w http.ResponseWriter, r *http.Request, dir, bucket_name, obj
 
 func PutObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, object *s.ObjectMetadata) {
 	bucket_dir := filepath.Join(dir, bucket_name)
-	bucketExistence(w, bucket_name, bucket_dir)
+	if ok, err := bucketExistence(w, bucket_name, dir); !ok || err != nil {
+		return
+	}
 
 	if !validate.ObejectkeyValidation(object.ObjectKey) {
 		http.Error(w, "Invalid object key", http.StatusBadRequest)
 	}
 
-	err := storage.UploadObject(object, r.Body, bucket_dir)
+	var content io.Reader
+	file, _, err := r.FormFile("file") // для -F "file=@test.jpg"
+	if err == nil {
+		content = file
+	} else if err.Error() == "request Content-Type isn't multipart/form-data" {
+		body, err := io.ReadAll(r.Body) // для --data-binary
+		if err != nil {
+			http.Error(w, err.Error()+"Couldn't read a file", http.StatusInternalServerError)
+			return
+		}
+		content = bytes.NewReader(body)
+	} else {
+		http.Error(w, err.Error()+"\n PutObject()", http.StatusBadRequest)
+		return
+	}
+
+	err = storage.UploadObject(object, content, bucket_dir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -46,14 +65,19 @@ func PutObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, 
 
 func GetObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, object *s.ObjectMetadata) {
 	bucket_dir := filepath.Join(dir, bucket_name)
-	bucketExistence(w, bucket_name, bucket_dir)
-	objectExistence(w, bucket_dir, object)
+	if ok, err := bucketExistence(w, bucket_name, dir); !ok || err != nil {
+		return
+	}
+	if ok, err := objectExistence(w, bucket_dir, object); !ok || err != nil {
+		return
+	}
 
 	meta, file, err := storage.GetObjectContent(object, bucket_dir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer file.Close()
 
 	w.Header().Set("Content-Type", meta.ContentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(meta.ContentLength, 10))
@@ -64,8 +88,12 @@ func GetObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, 
 
 func DeleteObject(w http.ResponseWriter, r *http.Request, dir, bucket_name string, object *s.ObjectMetadata) {
 	bucket_dir := filepath.Join(dir, bucket_name)
-	bucketExistence(w, bucket_name, bucket_dir)
-	objectExistence(w, bucket_dir, object)
+	if ok, err := bucketExistence(w, bucket_name, dir); !ok || err != nil {
+		return
+	}
+	if ok, err := objectExistence(w, bucket_dir, object); !ok || err != nil {
+		return
+	}
 
 	err := storage.DeleteObjectContent(object, bucket_dir)
 	if err != nil {
@@ -77,29 +105,30 @@ func DeleteObject(w http.ResponseWriter, r *http.Request, dir, bucket_name strin
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func bucketExistence(w http.ResponseWriter, bucket_name, bucket_dir string) {
-	ok, err := storage.IsBucketExists(bucket_name, bucket_dir)
+func bucketExistence(w http.ResponseWriter, bucket_name, dir string) (bool, error) {
+	ok, err := storage.IsBucketExists(bucket_name, dir)
 	if !ok {
 		http.Error(w, "The requested bucket name is not available."+
 			"The bucket namespace is shared by all users of the system. Select a different name and try again.", http.StatusConflict)
-		return
+		return ok, nil
 	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return false, err
 	}
+	return true, nil
 }
-
-func objectExistence(w http.ResponseWriter, bucket_dir string, object *s.ObjectMetadata) {
+func objectExistence(w http.ResponseWriter, bucket_dir string, object *s.ObjectMetadata) (bool, error) {
 	ok, err := storage.IsObjectExist(object, bucket_dir)
 	if !ok {
 		http.Error(w, "The requested object does not exist", http.StatusConflict)
-		return
+		return ok, nil
 	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return false, err
 	}
+	return true, nil
 }
 
 // func extractObjectHeader(r *http.Request) string { // i dont receive Content-Length as int
