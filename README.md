@@ -29,7 +29,7 @@ go build -o triple-s .
 ```sh
 ./triple-s --port 8080 --dir ./data
 ```
-Port and directory can be assigned.
+Port and directory can be assigned. 
 
 ## Usage
 

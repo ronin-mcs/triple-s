@@ -58,6 +58,11 @@ func main() {
 
 	flag.Parse()
 
+	err := os.MkdirAll(*dir, 0o755)
+	if err != nil {
+		log.Fatalf("Couldn't create a directory %s: %v", *dir, err)
+	}
+
 	if *port <= 0 || *port > 65535 {
 		log.Fatalf("invalid port: %d", *port)
 	}
